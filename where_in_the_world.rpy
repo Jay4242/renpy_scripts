@@ -51,7 +51,7 @@ label start:
 
         "[stolen] from [start_location] was stolen!"
         "You will need to travel through the following cities:"
-        for city in cities:
+        for city in cities:  #This is actually not how you loop through an array in RenPy and needs to be fixed.
             $ city_name, $ nation = city.split(', ')
             "[city]"
             $ fact = generate_witness_facts(city_name, nation)
