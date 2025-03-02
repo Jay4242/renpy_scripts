@@ -10,7 +10,7 @@ init python:
     import re
 
     def generate(system_message, user_message, temp):
-        llama_addy = f"http://localhost.lan:9090/v1/chat/completions"
+        llama_addy = f"http://localhost:9090/v1/chat/completions"
         data = { "model": "llama-3_2-3b-it-q8_0", "messages": [ {"role": "system", "content": system_message}, {"role": "user", "content": user_message}], "temperature": temp, "max_tokens": -1, "stream": False }
         try:
             comment = renpy.fetch(llama_addy, json=data, method="POST", timeout=120, result='json')
@@ -30,8 +30,10 @@ init python:
     def call_llm(user_message, temp):
         return generate(GAME_DESIGNER_SYSTEM_MESSAGE, user_message, temp)
 
-    def generate_witness_facts(city, nation):
-        user_message = f"Create a cryptic clue about {city}, {nation} that a witness might say. The clue should hint at a famous landmark, cultural aspect, or historical event in the city. Only list one clue with no intro, outro, or explanation or notes."
+    def generate_witness_facts(city, nation, stolen_item):
+        user_message = f"""The suspect stole {stolen_item}. The suspect is now in {city}, {nation}. Create a cryptic clue that a witness might say, hinting at where the suspect went, {city}, {nation} with the stolen item. The clue should allude to a famous landmark, cultural aspect, or historical event in that *next* city. Only list one clue with no intro, outro, or explanation or notes.
+        Example: If the city is London, England, the clue could start off 'They said something about...' followed by such a clue about London, England that would allude a player to selecting that when given a selection of options.  Perhaps, 'They said something about looking forward to seeing a huge clock.  Big something...Big Ben?'  Although that example may be too obvious since it mentions Big Ben directly.
+        It shouldn't be so vague that someone wouldn't be able to guess which city it is."""
         temp = 0.5
         clue = call_llm(user_message, temp)
         return clue
@@ -61,10 +63,17 @@ label start:
         $ city_index = 0
         while city_index < len(cities):
             $ city = cities[city_index]
-            $ city_name, nation = city.split(', ')
-            "[city]"
-            $ clue = generate_witness_facts(city_name, nation)
-            "Witness: [clue]"
+            $ parts = city.split(', ')
+            if len(parts) == 2:
+                $ city_name, nation = parts
+                "[city]"
+                $ i = 0
+                while i < 3:
+                    $ clue = generate_witness_facts(city_name, nation, stolen)
+                    "Witness: [clue]"
+                    $ i += 1
+            else:
+                "Error: Invalid city format from LLM: [city]"
             $ city_index += 1
 
 
